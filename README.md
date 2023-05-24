@@ -9,14 +9,7 @@ Supported services
 - [Open Badge Factory](https://openbadgefactory.com/) (Badges issued by your system via OBF)
 - [Open Badge Passport](https://openbadgepassport.com/)
 - [CanCred Passport](https://passport.cancred.ca/)
-- [Salava](http://salava.org)
-- [Mozilla Backpack](https://backpack.openbadges.org)
 - Moodle's internal badges
-
-For developers
---------
-
-[See the project README](../../../README.md)
 
 How to install, and set up the block on profile pages
 --------------
