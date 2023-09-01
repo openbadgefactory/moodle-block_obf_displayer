@@ -19,8 +19,15 @@
  * @copyright  2020, Open Badge Factory Oy Oy
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once($CFG->dirroot . '/local/obf/class/backpack.php');
-require_once($CFG->dirroot . '/local/obf/class/badge.php');
+
+use classes\obf_assertion;
+use classes\obf_assertion_collection;
+use classes\obf_backpack;
+use classes\obf_blacklist;
+use classes\obf_client;
+
+require_once($CFG->dirroot . '/local/obf/classes/backpack.php');
+require_once($CFG->dirroot . '/local/obf/classes/badge.php');
 require_once($CFG->dirroot . '/local/obf/renderer.php');
 
 /**
@@ -39,17 +46,21 @@ class block_obf_displayer extends block_base {
 
     /**
      * Allow multiple instances
+     *
      * @return boolean true
      */
     public function instance_allow_multiple() {
-      return true;
+        return true;
     }
 
     protected function get_badge_displaytype() {
-        return !empty($this->config) && property_exists($this->config, 'displaytype') && $this->config->displaytype == 'loggedinuser' ? 'loggedinuser' : 'contextuser';
+        return !empty($this->config) && property_exists($this->config, 'displaytype') &&
+        $this->config->displaytype == 'loggedinuser' ? 'loggedinuser' : 'contextuser';
     }
+
     /**
      * Get content.
+     *
      * @return stdClass
      */
     public function get_content() {
@@ -57,26 +68,25 @@ class block_obf_displayer extends block_base {
         if ($this->content !== null) {
             return $this->content;
         }
-        
+
         if ($this->get_badge_displaytype() == 'contextuser') {
             $context = $PAGE->context;
             $this->title = get_string('displaycontextuser_blocktitle', 'block_obf_displayer');
-        } else if(isloggedin()) {
+        } else if (isloggedin()) {
             $context = context_user::instance($USER->id);
             $this->title = get_string('displayloggedinuser_blocktitle', 'block_obf_displayer');
         } else {
             return false;
         }
 
-        if ($context->contextlevel !== CONTEXT_USER || ($this->get_badge_displaytype() == 'contextuser' && $PAGE->pagetype !== 'user-profile')) {
+        if ($context->contextlevel !== CONTEXT_USER ||
+            ($this->get_badge_displaytype() == 'contextuser' && $PAGE->pagetype !== 'user-profile')) {
             return false;
         }
 
         $userid = $context->instanceid;
 
         $assertions = $this->get_assertions($userid, $DB);
-
-        
 
         $this->content = new stdClass;
         $this->content->text = '';
@@ -99,12 +109,14 @@ class block_obf_displayer extends block_base {
 
         return $this->content;
     }
-    
+
     private function is_cache_assertions_enabled() {
         return (!isset($this->config) || !isset($this->config->disableassertioncache)) || !$this->config->disableassertioncache;
     }
+
     /**
      * Get assertions.
+     *
      * @param int $userid
      * @param moodle_database $db
      * @return obf_assertion_collection
@@ -136,41 +148,45 @@ class block_obf_displayer extends block_base {
                         }
                     }
 
-                    $assertions->add_collection(obf_assertion::get_assertions_all($client, $db->get_record('user', array('id' => $userid))->email));
+                    $assertions->add_collection(obf_assertion::get_assertions_all($client,
+                        $db->get_record('user', array('id' => $userid))->email));
                     $assertions->apply_blacklist($blacklist);
-
 
                 } catch (Exception $e) {
                     debugging('Getting OBF assertions for user id: ' . $userid . ' failed: ' . $e->getMessage());
                 }
 
                 $assertions->toArray(); // This makes sure issuer objects are populated and cached.
-                $cache->set($userid, $assertions );
+                $cache->set($userid, $assertions);
             }
         } else {
             $assertions = new obf_assertion_collection();
         }
         return $assertions;
     }
-    
+
     /**
      * Get assertions.
+     *
      * @param int $userid
      * @return obf_assertion_collection
      */
     private function get_moodle_assertions($userid) {
         global $CFG;
-        $badgeslib_file = $CFG->libdir.'/badgeslib.php';
-        
+        $badgeslib_file = $CFG->libdir . '/badgeslib.php';
+
         $assertions = new obf_assertion_collection();
-        if (file_exists($badgeslib_file) && (empty($this->config) || !property_exists($this->config, 'showmoodle') || $this->config->showmoodle)) {
+        if (file_exists($badgeslib_file) &&
+            (empty($this->config) || !property_exists($this->config, 'showmoodle') || $this->config->showmoodle)) {
             require_once($badgeslib_file);
             $assertions->add_collection(obf_assertion::get_user_moodle_badge_assertions($userid));
         }
         return $assertions;
     }
+
     /**
      * Get backpack assertions.
+     *
      * @param int $userid
      * @param moodle_database $db
      * @param int $provider
@@ -182,7 +198,7 @@ class block_obf_displayer extends block_base {
             return new obf_assertion_collection();
         }
         $shortname = $backpack->get_providershortname();
-        $showprop = 'show'.$shortname;
+        $showprop = 'show' . $shortname;
         if (empty($this->config) || !property_exists($this->config, $showprop) || $this->config->{$showprop}) {
             $cache = cache::make('block_obf_displayer', 'obf_assertions_backpacks');
             $userassertions = !$this->is_cache_assertions_enabled() ? null : $cache->get($userid);
@@ -196,7 +212,7 @@ class block_obf_displayer extends block_base {
                 try {
                     // Also get user's badges in Backpack, if user has backpack settings.
                     if ($backpack !== false && count($backpack->get_group_ids()) > 0) {
-                        $assertions->add_collection( $backpack->get_assertions() );
+                        $assertions->add_collection($backpack->get_assertions());
                     }
                 } catch (Exception $e) {
                     debugging('Getting backpack assertions for user id: ' . $userid . ' failed: ' . $e->getMessage());
@@ -204,22 +220,26 @@ class block_obf_displayer extends block_base {
 
                 $assertions->toArray(); // This makes sure issuer objects are populated and cached.
                 $userassertions[$shortname] = $assertions;
-                $cache->set($userid, $userassertions );
+                $cache->set($userid, $userassertions);
             }
         } else {
             $userassertions[$shortname] = new obf_assertion_collection();
         }
         return $userassertions[$shortname];
     }
+
     /**
      * Has config?
+     *
      * @return boolean True
      */
     public function has_config() {
         return false;
     }
+
     /**
      * HTML Attributes.
+     *
      * @return array
      */
     public function html_attributes() {
