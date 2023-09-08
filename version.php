@@ -21,12 +21,15 @@
  * @copyright  2015-2020, Open Badge Factory Oy Oy
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-$plugin->version = 2021120801;  // YYYYMMDDHH (year, month, day, 24-hr time).
-$plugin->release = '0.7.3';
-$plugin->requires = 2011120511;
+
+defined('MOODLE_INTERNAL') || die();
+
+$plugin->version = 2023090801;
+$plugin->release = '1.0.0';
+$plugin->requires = 2022112805; // Moodle 4.1 version check.
 $plugin->component = 'block_obf_displayer';
 $plugin->maturity = MATURITY_STABLE;
 
 $plugin->dependencies = array(
-    'local_obf' => 2021120800 // The main OBF plugin must be present
+    'local_obf' => 2023090701// The main OBF plugin must be present
 );
