@@ -26,10 +26,10 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->version = 2023090801;
 $plugin->release = '1.0.0';
-$plugin->requires = 2022112805; // Moodle 4.1 version check.
+$plugin->requires = 2022112800; // Moodle 4.1 version check.
 $plugin->component = 'block_obf_displayer';
 $plugin->maturity = MATURITY_STABLE;
 
 $plugin->dependencies = array(
-    'local_obf' => 2023090701// The main OBF plugin must be present
+    'local_obf' => 2023090701 // The main OBF plugin must be present
 );
